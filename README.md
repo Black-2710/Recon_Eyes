@@ -14,6 +14,7 @@ A tool that Automates Reconnaissance phase during Pen-testing a website...
 - theHarvester
 - Dirb
 - masscan
+- waf00f
 - curl
 - telnet
 - netcat
