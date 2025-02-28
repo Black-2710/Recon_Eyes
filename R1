@@ -1,0 +1,156 @@
+#!/bin/bash
+
+# Color Codes
+GREEN="\e[32m"
+BLUE="\e[34m"
+RED="\e[31m"
+RESET="\e[0m"
+
+# Clear ASCII Banner
+echo -e "${GREEN}"
+echo """
+██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗        ███████╗██╗   ██╗███████╗███████╗
+██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║        ██╔════╝╚██╗ ██╔╝██╔════╝██╔════╝
+██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║        █████╗   ╚████╔╝ █████╗  ███████╗
+██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║        ██╔══╝    ╚██╔╝  ██╔══╝  ╚════██║
+██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║███████╗███████╗   ██║   ███████╗███████║
+╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚══════╝   ╚═╝   ╚══════╝╚══════╝
+                                                                                     
+Recon_Eyes - Automated Recon Tool for Web-App Pentesting
+"""
+echo -e "${RESET}"
+
+# Function to check and install dependencies
+check_install() {
+    if ! command -v $1 &> /dev/null; then
+        echo -e "${RED}$1 is not installed.${RESET}"
+        MISSING_TOOLS+=($1)
+    fi
+}
+
+# List of required tools
+TOOLS=(nmap nslookup dig whois theHarvester dirb amass curl netcat masscan traceroute ping wafw00f spiderfoot)
+MISSING_TOOLS=()
+
+for TOOL in "${TOOLS[@]}"; do
+    check_install $TOOL
+done
+
+if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
+    echo -e "${RED}The following tools are missing: ${MISSING_TOOLS[@]}${RESET}"
+    read -p "Would you like to install them? (y/n): " INSTALL_CHOICE
+    if [[ "$INSTALL_CHOICE" == "y" || "$INSTALL_CHOICE" == "Y" ]]; then
+        sudo apt update
+        sudo apt install -y "${MISSING_TOOLS[@]}"
+    else
+        echo -e "${RED}Some required tools are missing. The script may not function properly.${RESET}"
+    fi
+fi
+
+# Prompt for Target
+read -p "Enter the target URL or IP: " TARGET
+
+# Menu Options
+echo -e "${BLUE}Choose a reconnaissance technique:${RESET}"
+echo "01. Web Crawling (theHarvester)"
+echo "02. Directory and File Discovery (Dirb)"
+echo "03. HTTP Header Inspection (cURL, Netcat)"
+echo "04. Subdomain Enumeration (Amass)"
+echo "05. DNS Enumeration (dig, nslookup, whois)"
+echo "06. Web Archives (cURL)"
+echo "07. Network Reconnaissance (nmap, masscan, traceroute, ping)"
+echo "08. Ping Sweeping (ping)"
+echo "09. Service Enumeration (nmap)"
+echo "10. OS Fingerprinting (nmap)"
+echo "11. Vulnerability Scanning (nmap)"
+echo "12. Network Mapping (traceroute)"
+echo "13. DNS Zone Transfer (dig)"
+echo "14. Web Application Scan (nmap)"
+echo "15. Firewall Detection (wafw00f)"
+echo "16. OSINT Recon (SpiderFoot)"
+echo "17. Exit"
+
+read -p "Enter your choice: " CHOICE
+
+echo -e "${GREEN}"
+case $CHOICE in
+  1)
+    echo "[+] Running theHarvester for web crawling..."
+    theHarvester -d $TARGET -b all
+    ;;
+  2)
+    echo "[+] Running Dirb for directory and file discovery..."
+    dirb http://$TARGET
+    ;;
+  3)
+    echo "[+] Fetching HTTP Headers..."
+    curl -I http://$TARGET
+    echo "[+] Using Netcat for HTTP response..."
+    nc -vz $TARGET 80
+    ;;
+  4)
+    echo "[+] Running Amass for subdomain enumeration..."
+    amass enum -d $TARGET
+    ;;
+  5)
+    echo "[+] Gathering DNS information..."
+    nslookup $TARGET
+    dig $TARGET
+    whois $TARGET
+    ;;
+  6)
+    echo "[+] Checking Web Archives..."
+    curl -s http://web.archive.org/cdx/search/cdx?url=$TARGET
+    ;;
+  7)
+    echo "[+] Performing Network Reconnaissance..."
+    ping -c 4 $TARGET
+    traceroute $TARGET
+    nmap -A $TARGET
+    masscan -p1-65535 --rate=1000 $TARGET
+    ;;
+  8)
+    echo "[+] Performing Ping Sweeping..."
+    ping -c 4 $TARGET
+    ;;
+  9)
+    echo "[+] Running Service Enumeration using nmap..."
+    nmap -sV $TARGET
+    ;;
+  10)
+    echo "[+] Running OS Fingerprinting using nmap..."
+    nmap -O $TARGET
+    ;;
+  11)
+    echo "[+] Running Vulnerability Scanning using nmap..."
+    nmap --script vuln $TARGET
+    ;;
+  12)
+    echo "[+] Performing Network Mapping using traceroute..."
+    traceroute $TARGET
+    ;;
+  13)
+    echo "[+] Attempting DNS Zone Transfer..."
+    dig axfr @$TARGET
+    ;;
+  14)
+    echo "[+] Running Web Application Scanning using nmap..."
+    nmap --script=http-enum $TARGET
+    ;;
+  15)
+    echo "[+] Detecting Web Application Firewall using wafw00f..."
+    wafw00f $TARGET
+    ;;
+  16)
+    echo "[+] Running OSINT Recon using SpiderFoot..."
+    spiderfoot -s $TARGET -q
+    ;;
+  17)
+    echo "Exiting..."
+    exit 0
+    ;;
+  *)
+    echo -e "${RED}Invalid option!${RESET}"
+    ;;
+esac
+echo -e "${RESET}"
