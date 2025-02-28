@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Color Codes
+GREEN="\e[32m"
+BLUE="\e[34m"
+RED="\e[31m"
+RESET="\e[0m"
+
+# Clear ASCII Banner
+echo -e "${GREEN}"
+echo """
+██████╗ ███████╗ ██████╗ ██████╗ ███╗   ██╗        ███████╗██╗   ██╗███████╗███████╗
+██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║        ██╔════╝╚██╗ ██╔╝██╔════╝██╔════╝
+██████╔╝█████╗  ██║     ██║   ██║██╔██╗ ██║        █████╗   ╚████╔╝ █████╗  ███████╗
+██╔══██╗██╔══╝  ██║     ██║   ██║██║╚██╗██║        ██╔══╝    ╚██╔╝  ██╔══╝  ╚════██║
+██║  ██║███████╗╚██████╗╚██████╔╝██║ ╚████║███████╗███████╗   ██║   ███████╗███████║
+╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝╚══════╝   ╚═╝   ╚══════╝╚══════╝
+                                                                                     
+Recon_Eyes - Automated Recon Tool for Web-App Pentesting
+"""
+echo -e "${RESET}"
+
+# Function to check and install dependencies
+check_install() {
+    if ! command -v $1 &> /dev/null; then
+        echo -e "${RED}$1 is not installed.${RESET}"
+        MISSING_TOOLS+=($1)
+    fi
+}
+
+# List of required tools
+TOOLS=(nmap nslookup dig whois theHarvester dirb amass curl netcat masscan traceroute ping)
+MISSING_TOOLS=()
+
+for TOOL in "${TOOLS[@]}"; do
+    check_install $TOOL
+done
+
+if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
+    echo -e "${RED}The following tools are missing: ${MISSING_TOOLS[@]}${RESET}"
+    read -p "Would you like to install them? (y/n): " INSTALL_CHOICE
+    if [[ "$INSTALL_CHOICE" == "y" || "$INSTALL_CHOICE" == "Y" ]]; then
+        sudo apt update
+        sudo apt install -y "${MISSING_TOOLS[@]}"
+    else
+        echo -e "${RED}Some required tools are missing. The script may not function properly.${RESET}"
+    fi
+fi
+
+# Prompt for Target
+read -p "Enter the target URL or IP: " TARGET
+
+# Menu Options
+echo -e "${BLUE}Choose a reconnaissance technique:${RESET}"
+echo "1. Web Crawling (theHarvester)"
+echo "2. Directory and File Discovery (Dirb)"
+echo "3. HTTP Header Inspection (cURL, Netcat)"
+echo "4. Subdomain Enumeration (Amass)"
+echo "5. DNS Enumeration (dig, nslookup, whois)"
+echo "6. Social Media Reconnaissance (theHarvester)"
+echo "7. Web Archives (cURL)"
+echo "8. Email Reconnaissance (theHarvester)"
+echo "9. Network Reconnaissance (nmap, masscan, traceroute, ping)"
+echo "10. Ping Sweeping (ping)"
+echo "11. Service Enumeration (nmap)"
+echo "12. OS Fingerprinting (nmap)"
+echo "13. Vulnerability Scanning (nmap)"
+echo "14. Network Mapping (traceroute)"
+echo "15. DNS Zone Transfer (dig)"
+echo "16. Social Engineering (Manual)"
+echo "17. Web Application Scanning (nmap)"
+echo "18. Exit"
+
+read -p "Enter your choice: " CHOICE
+
+echo -e "${GREEN}"
+case $CHOICE in
+  1)
+    echo "[+] Running theHarvester for web crawling..."
+    theHarvester -d $TARGET -b all
+    ;;
+  2)
+    echo "[+] Running Dirb for directory and file discovery..."
+    dirb http://$TARGET
+    ;;
+  3)
+    echo "[+] Fetching HTTP Headers..."
+    curl -I http://$TARGET
+    echo "[+] Using Netcat for HTTP response..."
+    nc -vz $TARGET 80
+    ;;
+  4)
+    echo "[+] Running Amass for subdomain enumeration..."
+    amass enum -d $TARGET
+    ;;
+  5)
+    echo "[+] Gathering DNS information..."
+    nslookup $TARGET
+    dig $TARGET
+    whois $TARGET
+    ;;
+  18)
+    echo "Exiting..."
+    exit 0
+    ;;
+  *)
+    echo -e "${RED}Invalid option!${RESET}"
+    ;;
+esac
+echo -e "${RESET}"
